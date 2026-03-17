@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>透過 TANetRoaming 連上 eduroam · OpenRoaming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f5f7fa;
+    --white:    #ffffff;
+    --ink:      #16213a;
+    --sub:      #546880;
+    --line:     #dde5f0;
+    --teal:     #0a8f7c;
+    --teal-lt:  #e0f5f2;
+    --amber:    #d97706;
+    --amber-lt: #fef3cd;
+    --blue:     #2563eb;
+    --blue-lt:  #eff4ff;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.8; }
+  a { color: inherit; }
+  img { max-width: 100%; border-radius: 10px; display: block; border: 1px solid var(--line); }
+
+  /* ── NAV ──────────────────────────────────────── */
+  nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--line);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 800; color: var(--teal); letter-spacing: -.01em; text-decoration: none; white-space: nowrap; }
+  .nav-sep  { width: 1px; height: 18px; background: var(--line); flex-shrink: 0; }
+  .nav-label { font-size: .82rem; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  /* ── BETA BANNER ──────────────────────────────── */
+  .beta-banner {
+    background: linear-gradient(90deg, #fffbeb, #fef3cd);
+    border-bottom: 1px solid rgba(217,119,6,.25);
+    padding: 10px 20px;
+    text-align: center;
+    font-size: .85rem;
+    color: #92400e;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    line-height: 1.7;
+  }
+  .beta-badge { display: inline-block; background: var(--amber); color: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; align-self: center; }
+
+  /* ── HERO ─────────────────────────────────────── */
+  .hero { padding: 72px 24px 80px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 15% 60%, rgba(10,143,124,.08) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 60% at 85% 30%, rgba(37,99,235,.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--teal); background: var(--teal-lt); border-radius: 999px; padding: 5px 14px; margin-bottom: 24px; animation: up .55s ease both; }
+  .hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.45rem, 5.5vw, 2.8rem); font-weight: 800; color: var(--ink); line-height: 1.25; letter-spacing: -.02em; max-width: 640px; margin: 0 auto 16px; animation: up .55s .08s ease both; overflow-wrap: anywhere; }
+  .hero h1 mark { background: none; color: var(--teal); }
+  .hero-sub { font-size: 1.02rem; color: var(--sub); font-weight: 300; max-width: 500px; margin: 0 auto 40px; animation: up .55s .16s ease both; }
+
+  .net-pills { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 40px; animation: up .55s .22s ease both; }
+  .pill { display: flex; align-items: center; gap: 7px; font-size: .88rem; font-weight: 600; padding: 8px 18px; border-radius: 999px; border: 1.5px solid transparent; }
+  .pill-teal { background: var(--teal-lt); color: var(--teal); border-color: rgba(10,143,124,.2); }
+  .pill-blue { background: var(--blue-lt); color: var(--blue); border-color: rgba(37,99,235,.2); }
+  .pill-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .pill-teal .pill-dot { background: var(--teal); }
+  .pill-blue .pill-dot { background: var(--blue); }
+
+  .hero-cta { display: inline-flex; align-items: center; gap: 9px; background: var(--teal); color: #fff; font-size: .97rem; font-weight: 600; padding: 14px 30px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 20px rgba(10,143,124,.3); transition: background .2s, transform .15s, box-shadow .2s; animation: up .55s .28s ease both; }
+  .hero-cta:hover { background: #07705f; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(10,143,124,.35); }
+
+  /* ── SECTIONS ─────────────────────────────────── */
+  .section { max-width: 820px; margin: 0 auto; padding: 0 24px 72px; }
+  .sec-title { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--ink); margin-bottom: 24px; letter-spacing: -.01em; }
+  .sec-title span { color: var(--teal); }
+
+  /* ── HOW-CARDS ────────────────────────────────── */
+  .how-card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 28px 32px; display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; margin-bottom: 14px; opacity: 0; transform: translateY(16px); transition: opacity .45s ease, transform .45s ease; }
+  .how-card.visible { opacity: 1; transform: none; }
+  .how-num { width: 44px; height: 44px; border-radius: 10px; background: var(--teal-lt); color: var(--teal); font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .how-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .how-card p  { font-size: .93rem; color: var(--sub); }
+
+  /* platform split in step 1 */
+  .platform-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .plat-box { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .plat-box h4 { font-size: .88rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .plat-box p  { font-size: .83rem; color: var(--sub); line-height: 1.6; }
+  .plat-box .dl-btn { margin-top: 10px; font-size: .82rem; padding: 8px 14px; }
+
+  .account-eg { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; font-size: .88rem; color: var(--sub); }
+  .account-eg code { font-family: 'Courier New', monospace; font-size: .9em; color: var(--teal); font-weight: 700; }
+
+  .inline-note { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; background: var(--teal-lt); border-radius: 8px; padding: 10px 14px; font-size: .85rem; color: var(--teal); }
+  .ios-note    { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; background: var(--blue-lt); border-radius: 8px; padding: 10px 14px; font-size: .85rem; color: var(--blue); }
+  .warn-note   { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; background: var(--amber-lt); border-radius: 8px; padding: 10px 14px; font-size: .85rem; color: #92400e; }
+
+  .dl-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; background: var(--teal); color: #fff; font-size: .9rem; font-weight: 600; padding: 10px 22px; border-radius: 8px; text-decoration: none; transition: background .2s, transform .15s; box-shadow: 0 2px 10px rgba(10,143,124,.25); }
+  .dl-btn:hover { background: #07705f; transform: translateY(-1px); }
+
+  /* ── NETWORK CARDS ────────────────────────────── */
+  .net-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .net-card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 24px; opacity: 0; transform: translateY(16px); transition: opacity .4s ease, transform .4s ease, box-shadow .2s; }
+  .net-card.visible { opacity: 1; transform: none; }
+  .net-card:hover { box-shadow: 0 6px 24px rgba(22,33,58,.07); }
+  .net-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 14px; }
+  .net-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .net-card p  { font-size: .88rem; color: var(--sub); line-height: 1.65; }
+
+  /* ── GUIDE TABS ───────────────────────────────── */
+  .guide-wrap { background: var(--white); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+
+  .tab-bar { display: flex; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { flex-shrink: 0; padding: 13px 22px; font-size: .9rem; font-weight: 600; color: var(--sub); border: none; background: none; cursor: pointer; border-bottom: 2.5px solid transparent; transition: color .18s, border-color .18s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  .tab-panel { display: none; padding: 32px; }
+  .tab-panel.active { display: block; }
+
+  /* guide steps */
+  .g-step { display: flex; gap: 16px; margin-bottom: 28px; align-items: flex-start; }
+  .g-step:last-child { margin-bottom: 0; }
+  .g-n { width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: #fff; font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .g-body { flex: 1; }
+  .g-body p  { font-size: .93rem; color: var(--sub); margin-bottom: 10px; }
+  .g-body strong { color: var(--ink); }
+  .g-body img { margin-top: 12px; max-width: 320px; box-shadow: 0 4px 16px rgba(22,33,58,.08); }
+
+  /* store badges */
+  .store-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .store-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-size: .88rem; font-weight: 600; text-decoration: none; border: 1.5px solid; transition: background .18s, color .18s; }
+  .store-btn-gp  { background: #e8f5e9; color: #1b5e20; border-color: rgba(27,94,32,.2); }
+  .store-btn-gp:hover  { background: #1b5e20; color: #fff; }
+  .store-btn-as  { background: var(--blue-lt); color: var(--blue); border-color: rgba(37,99,235,.2); }
+  .store-btn-as:hover  { background: var(--blue); color: #fff; }
+
+  /* ── FAQ ──────────────────────────────────────── */
+  .faq { display: flex; flex-direction: column; gap: 10px; }
+  details { background: var(--white); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; opacity: 0; transform: translateY(12px); transition: opacity .4s ease, transform .4s ease, border-color .2s; }
+  details.visible { opacity: 1; transform: none; }
+  details[open] { border-color: rgba(10,143,124,.3); }
+  summary { list-style: none; padding: 16px 20px; cursor: pointer; font-weight: 600; font-size: .95rem; display: flex; justify-content: space-between; align-items: center; gap: 12px; user-select: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '+'; font-size: 1.15rem; color: var(--teal); font-weight: 300; transition: transform .22s; flex-shrink: 0; }
+  details[open] summary::after { transform: rotate(45deg); }
+  .faq-body { border-top: 1px solid var(--line); padding: 14px 20px 18px; font-size: .93rem; color: var(--sub); }
+
+  /* ── FOOTER ───────────────────────────────────── */
+  footer { background: var(--ink); padding: 36px 24px; text-align: center; font-size: .82rem; color: rgba(255,255,255,.35); line-height: 2; }
+  footer a { color: rgba(255,255,255,.55); text-decoration: none; }
+  footer a:hover { color: #fff; }
+  .footer-units { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px; margin-bottom: 12px; color: rgba(255,255,255,.5); }
+  .footer-units a { color: rgba(255,255,255,.65); }
+  .footer-units a:hover { color: #fff; }
+  .footer-divider { border: none; border-top: 1px solid rgba(255,255,255,.08); margin: 14px auto; max-width: 400px; }
+
+  /* ── Animations ───────────────────────────────── */
+  @keyframes up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 560px) {
+    .how-card { grid-template-columns: 1fr; gap: 12px; padding: 20px; }
+    .platform-split { grid-template-columns: 1fr; }
+    nav { padding: 0 16px; }
+    .tab-panel { padding: 20px; }
+    .g-body img { max-width: 100%; }
+  }
+
+  @media (max-width: 400px) {
+    .nav-sep, .nav-label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">TANetRoaming</span>
+  <div class="nav-sep"></div>
+  <span class="nav-label">eduroam / OpenRoaming 連線說明</span>
+</nav>
+
+<!-- BETA BANNER -->
+<div class="beta-banner">
+  <span class="beta-badge">測試中</span>
+  本服務目前仍在測試階段，如遇問題歡迎回報給 <a href="https://roamingcenter.ndhu.edu.tw/" target="_blank" rel="noopener" style="color:#92400e;font-weight:600;">TANet 無線網路漫遊交換中心</a>，感謝你的協助！
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">✦ 一個帳號，兩種網路</div>
+  <h1>想連 eduroam，<br>但學校只支援 <mark>TANetRoaming</mark>？</h1>
+  <p class="hero-sub">沒問題。只要你的學校有加入 TANetRoaming，就算校方尚未直接支援 eduroam 認證，你也可以用原本的學校帳號連上 eduroam 和 OpenRoaming。</p>
+
+  <div class="net-pills">
+    <span class="pill pill-teal"><span class="pill-dot"></span>eduroam</span>
+    <span class="pill pill-blue"><span class="pill-dot"></span>OpenRoaming</span>
+  </div>
+
+  <a class="hero-cta" href="#guide" rel="noopener">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+    查看連線教學
+  </a>
+</section>
+
+<!-- HOW IT WORKS -->
+<div class="section">
+  <p class="sec-title">只要三步驟，<span>馬上開始用</span></p>
+
+  <div class="how-card">
+    <div class="how-num">1</div>
+    <div>
+      <h3>下載設定工具</h3>
+      <p>依照你的裝置選擇對應方式：</p>
+      <div class="platform-split">
+        <div class="plat-box">
+          <h4>📱 Android / iOS</h4>
+          <p>從程式商店下載 <strong>geteduroam</strong> App，在搜尋組織頁面輸入 <strong>TANetRoaming</strong>，點選後即可進行下一步。</p>
+          <div class="store-btns">
+            <a class="store-btn store-btn-gp" href="https://play.google.com/store/apps/details?id=app.eduroam.geteduroam" target="_blank" rel="noopener">▶ Google Play</a>
+            <a class="store-btn store-btn-as" href="https://apps.apple.com/app/geteduroam/id1504076137" target="_blank" rel="noopener"> App Store</a>
+          </div>
+        </div>
+        <div class="plat-box">
+          <h4>💻 Windows / Linux</h4>
+          <p>前往 eduroam CAT 頁面下載設定程式。</p>
+          <a class="dl-btn" href="https://cat.eduroam.org/?idp=9427&profile=14139" target="_blank" rel="noopener">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            eduroam CAT
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="how-card">
+    <div class="how-num">2</div>
+    <div>
+      <h3>完成設定</h3>
+      <p>開啟工具後依照畫面指示操作，輸入你的學校帳號與密碼。程式會自動設定好所有連線參數，<strong>不需要手動調整任何 Wi-Fi 設定</strong>。</p>
+      <div class="account-eg">帳號範例：<code>example@mail.edu.tw</code></div>
+      <div class="inline-note" style="margin-top:10px;">🔑 <span>直接輸入原本的學校帳號即可，不需要修改格式。</span></div>
+      <div class="inline-note" style="margin-top:8px;">✅ <span>設定只需做一次，之後到任何支援的場所都能自動連線。</span></div>
+    </div>
+  </div>
+
+  <div class="how-card">
+    <div class="how-num">3</div>
+    <div>
+      <h3>選擇 Wi-Fi，直接連線</h3>
+      <p>設定完成後，在 Wi-Fi 清單選擇 <strong>eduroam</strong> 或 <strong>OpenRoaming</strong> 即可。</p>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE_REMOVED --><div style="display:none"><div class="guide-wrap">
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" role="tab" data-tab="android">Android</button>
+      <button class="tab-btn" role="tab" data-tab="ios">iOS</button>
+      <button class="tab-btn" role="tab" data-tab="windows">Windows</button>
+      <button class="tab-btn" role="tab" data-tab="linux">Linux</button>
+    </div>
+
+    <!-- Android -->
+    <div class="tab-panel active" id="tab-android">
+      <div class="g-step">
+        <div class="g-n">1</div>
+        <div class="g-body">
+          <p>從 Google Play 下載 <strong>geteduroam</strong>，安裝完成後打開它。</p>
+          <div class="store-btns">
+            <a class="store-btn store-btn-gp" href="https://play.google.com/store/apps/details?id=app.eduroam.geteduroam" target="_blank" rel="noopener">▶ Google Play 下載</a>
+          </div>
+          <img src="images/android01.webp" alt="geteduroam Android 首頁畫面">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">2</div>
+        <div class="g-body">
+          <p>在搜尋框輸入 <strong>TANetRoaming</strong>，找到後點選進入。</p>
+          <div class="inline-note" style="margin-bottom:0">💡 <span>若搜尋框不可輸入，請長按右上角的搜尋鍵。</span></div>
+          <img src="images/android02.webp" alt="搜尋 TANetRoaming">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">3</div>
+        <div class="g-body">
+          <p>確認組織資訊後，點選 <strong>Select this organisation</strong>。</p>
+          <img src="images/android03.webp" alt="選擇組織">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">4</div>
+        <div class="g-body">
+          <p>輸入你的<strong>學校帳號與密碼</strong>，然後點選 <strong>Log in</strong>。</p>
+          <img src="images/android04.webp" alt="輸入帳號密碼">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">5</div>
+        <div class="g-body">
+          <p>跳出儲存網路的選單時，選擇 <strong>Save／確認／儲存</strong> 等字樣的選項即完成。</p>
+          <img src="images/android05.webp" alt="儲存網路設定">
+        </div>
+      </div>
+    </div>
+
+    <!-- iOS -->
+    <div class="tab-panel" id="tab-ios">
+      <div class="g-step">
+        <div class="g-n">1</div>
+        <div class="g-body">
+          <p>從 App Store 下載 <strong>geteduroam</strong>，安裝完成後打開它。</p>
+          <div class="store-btns">
+            <a class="store-btn store-btn-as" href="https://apps.apple.com/app/geteduroam/id1504076137" target="_blank" rel="noopener"> App Store 下載</a>
+          </div>
+          <img src="images/ios01.webp" alt="geteduroam iOS 首頁畫面">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">2</div>
+        <div class="g-body">
+          <p>在搜尋框輸入 <strong>TANetRoaming</strong>，找到後點選進入。</p>
+          <div class="inline-note" style="margin-bottom:0">💡 <span>若搜尋框不可輸入，請長按右上角的搜尋鍵。</span></div>
+          <img src="images/ios02.webp" alt="搜尋 TANetRoaming">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">3</div>
+        <div class="g-body">
+          <p>確認組織資訊後，點選 <strong>Select this organisation</strong>。</p>
+          <img src="images/ios03.webp" alt="選擇組織">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">4</div>
+        <div class="g-body">
+          <p>輸入你的<strong>學校帳號與密碼</strong>，然後點選 <strong>Log in</strong>，完成後 App 會自動安裝描述檔。</p>
+          <img src="images/ios04.webp" alt="輸入帳號密碼">
+        </div>
+      </div>
+    </div>
+
+    <!-- Windows -->
+    <div class="tab-panel" id="tab-windows">
+      <div class="g-step">
+        <div class="g-n">1</div>
+        <div class="g-body">
+          <p>下載 <strong>geteduroam</strong> 主程式，以及你單位的 <strong>.eapconfig 設定檔</strong>（請至 <a href="https://edur.isli.me/services/idp_profile_db/" target="_blank" rel="noopener" style="color:var(--teal)">設定檔資料庫</a> 取得）。</p>
+          <div class="store-btns">
+            <a class="store-btn store-btn-gp" href="https://dl.eduroam.app/windows/amd64/geteduroam.exe" target="_blank" rel="noopener">⬇ 一般電腦 (amd64)</a>
+            <a class="store-btn store-btn-as" href="https://dl.eduroam.app/windows/arm64/geteduroam.exe" target="_blank" rel="noopener">⬇ arm64</a>
+          </div>
+          <img src="images/win02.webp" alt="geteduroam Windows 下載">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">2</div>
+        <div class="g-body">
+          <p>新增一個資料夾（名稱任意），將下載的<strong>設定檔</strong>與 <strong>geteduroam.exe</strong> 放進同一個資料夾，然後執行 geteduroam.exe。</p>
+          <img src="images/win03.webp" alt="執行 geteduroam">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">3</div>
+        <div class="g-body">
+          <p>確認設定檔資訊後，按 <strong>Next</strong>。</p>
+          <img src="images/win04.webp" alt="確認設定檔">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">4</div>
+        <div class="g-body">
+          <p>若跳出安全性警告，依序點選 <strong>Install → 是 → Next</strong>。</p>
+          <div class="warn-note">⚠️ <span>請勿安裝任何不明來源的設定檔。</span></div>
+          <img src="images/win050607.webp" alt="安全性確認步驟">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">5</div>
+        <div class="g-body">
+          <p>輸入你的<strong>學校帳號與密碼</strong>，按 <strong>Connect</strong>。</p>
+          <img src="images/win08.webp" alt="輸入帳號密碼">
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">6</div>
+        <div class="g-body">
+          <p>出現 <strong>Everything is set up correctly!</strong> 畫面即完成設定，可以開始上網了。🎉</p>
+          <img src="images/win09.webp" alt="設定完成畫面">
+        </div>
+      </div>
+    </div>
+
+    <!-- Linux -->
+    <div class="tab-panel" id="tab-linux">
+      <div class="g-step">
+        <div class="g-n">1</div>
+        <div class="g-body">
+          <p>前往 geteduroam Linux 版本的 GitHub Releases 頁面，下載對應你發行版的安裝包。</p>
+          <div class="store-btns">
+            <a class="store-btn store-btn-gp" href="https://github.com/geteduroam/linux-app/releases" target="_blank" rel="noopener">GitHub Releases</a>
+          </div>
+        </div>
+      </div>
+      <div class="g-step">
+        <div class="g-n">2</div>
+        <div class="g-body">
+          <p>安裝完成後，開啟 geteduroam，在搜尋框輸入 <strong>TANetRoaming</strong> 找到組織，接著輸入學校帳號密碼完成設定。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- NETWORKS -->
+<div class="section" style="padding-top:0;">
+  <p class="sec-title">你可以連哪些網路？<span>兩種都支援</span></p>
+  <div class="net-grid">
+    <div class="net-card">
+      <div class="net-icon" style="background:#e0f5f2;">🌏</div>
+      <h3>eduroam</h3>
+      <p>全球學術機構共享的 Wi-Fi 網路，覆蓋超過 100 個國家的大學與研究機構。出國交流、學術訪問時直接連用。</p>
+    </div>
+    <div class="net-card">
+      <div class="net-icon" style="background:#eff4ff;">📡</div>
+      <h3>OpenRoaming</h3>
+      <p>由 Wireless Broadband Alliance 推動的國際漫遊聯盟，支援場所涵蓋機場、飯店、展覽中心等公共場所。</p>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="section" style="padding-top:0;">
+  <p class="sec-title">常見問題</p>
+  <div class="faq">
+    <details>
+      <summary>我沒有 TANetRoaming 帳號，可以申請嗎？</summary>
+      <div class="faq-body">TANetRoaming 帳號由你所在的學校或機構統一申辦。如需開通，請洽詢校內的資訊服務中心或網路管理單位。</div>
+    </details>
+    <details>
+      <summary>換新手機或電腦，需要重新設定嗎？</summary>
+      <div class="faq-body">需要。設定綁定在特定裝置上，換裝置後請重新依照上方教學操作一次即可。</div>
+    </details>
+    <details>
+      <summary>連線失敗或無法認證怎麼辦？</summary>
+      <div class="faq-body">請先確認帳號格式（含完整網域，例如 <code style="font-family:monospace;color:var(--teal)">example@mail.edu.tw</code>）與密碼是否正確。若近期有更改密碼，請重新執行設定流程一次（和新裝置一樣）。若仍無法解決，請聯絡你所在單位的資訊服務中心。</div>
+    </details>
+    <details>
+      <summary>eduroam 和 OpenRoaming 有什麼不同？</summary>
+      <div class="faq-body">eduroam 主要覆蓋全球的大學與學術機構；OpenRoaming 則延伸到更多公共場所，例如機場、飯店與展覽中心。兩者都用同一組帳號，裝置會根據現場有哪個 Wi-Fi 自動連線。</div>
+    </details>
+    <details>
+      <summary>這樣連線安全嗎？</summary>
+      <div class="faq-body">安全。eduroam 和 OpenRoaming 都採用加密認證機制，你的帳號密碼不會被現場的網路設備取得，認證過程由 TANet 無線網路漫遊交換中心和你自己學校的系統完成，與一般公開 Wi-Fi 相比安全許多。</div>
+    </details>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-units">
+    <span>指導單位：<a href="https://roamingcenter.ndhu.edu.tw/" target="_blank" rel="noopener">TANet 無線網路漫遊交換中心</a></span>
+    <span>維運單位：<a href="https://edur.isli.me" target="_blank" rel="noopener">學網漫遊第三方資料庫</a></span>
+  </div>
+  <hr class="footer-divider">
+  <span>如需協助請洽：臺灣學術無線網路漫遊中心 · 📞 03-890-6206 · ✉️ <a href="mailto:roamingcenter@gms.ndhu.edu.tw">roamingcenter@gms.ndhu.edu.tw</a></span>
+</footer>
+
+<script>
+  // ── Tab switching ────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+    });
+  });
+
+  // ── Scroll-in animations ─────────────────────────
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const siblings = [...e.target.parentElement.children];
+      const idx = siblings.indexOf(e.target);
+      e.target.style.transitionDelay = (idx * 0.09) + 's';
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.how-card, .net-card, details').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
